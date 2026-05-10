@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id            BigInt    @id @default(autoincrement())
+  login_id      String    @unique @db.VarChar(100)
+  password_hash String    @db.VarChar(255)
+  name          String    @db.VarChar(100)
+  role          String?   @default("EDITOR") @db.VarChar(20)
+  last_login_at DateTime? @db.Timestamp(6)
+  is_active     Boolean?  @default(true)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+
+  @@map("admins")
+}
+
+model Page {
+  id         BigInt    @id @default(autoincrement())
+  page_key   String    @unique @db.VarChar(100)
+  page_name  String    @db.VarChar(100)
+  is_active  Boolean?  @default(true)
+  sort_order Int?      @default(0)
+  theme      Json?     @default("{}")
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+
+  contents PageContent[]
+
+  @@map("pages")
+}
+
+model PageContent {
+  id           BigInt    @id @default(autoincrement())
+  page_id      BigInt
+  content_type String    @db.VarChar(20)
+  title        String?   @db.VarChar(200)
+  content      String?
+  image_path   String?   @db.VarChar(500)
+  data         Json?     @default("{}")
+  sort_order   Int?      @default(0)
+  is_active    Boolean?  @default(true)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+
+  page Page @relation(fields: [page_id], references: [id], onDelete: Cascade)
+
+  @@index([page_id, sort_order])
+  @@map("page_contents")
+}
+
+model Popup {
+  id         BigInt    @id @default(autoincrement())
+  title      String    @db.VarChar(100)
+  image_path String?   @db.VarChar(500)
+  link_url   String?   @db.VarChar(500)
+  start_at   DateTime  @db.Timestamp(6)
+  end_at     DateTime? @db.Timestamp(6)
+  is_active  Boolean?  @default(true)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+
+  @@map("popups")
+}
