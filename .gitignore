@@ -1,5 +1,5 @@
 # Nestjs specific
-/dist
+# /dist 는 git 에 포함한다 — Vercel Git 배포(@vercel/node)가 dist/src/main.js 로 함수를 만들기 때문 (없으면 전 라우트 404)
 /node_modules
 /build
 /tmp
@@ -22,3 +22,4 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+.vercel
