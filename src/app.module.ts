@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { PostsModule } from './modules/posts/posts.module';
 import { ContentModule } from './modules/content/content.module';
 
 @Module({
@@ -11,6 +12,7 @@ import { ContentModule } from './modules/content/content.module';
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     AuthModule,
+    PostsModule,
     ContentModule,
   ],
   controllers: [AppController],

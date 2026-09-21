@@ -1,8 +1,9 @@
 import { IsString, IsIn, IsObject, IsOptional, IsBoolean } from 'class-validator';
+import { BLOCK_TYPES } from '../block-types';
 
 export class CreateBlockDto {
   @IsString()
-  @IsIn(['hero', 'card-grid', 'two-column', 'process-steps'])
+  @IsIn(BLOCK_TYPES as unknown as string[])
   type: string;
 
   @IsObject()

@@ -3,10 +3,80 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { UpdateBlockDto } from './dto/update-block.dto';
 import { ReorderBlocksDto } from './dto/reorder-blocks.dto';
+import { SavePageDto } from './dto/save-page.dto';
 
 @Injectable()
 export class ContentService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * 공개 렌더용 — is_active 페이지 + is_active 블록만 반환.
+   * 인증 없음. 페이지 없거나 비활성이면 404.
+   */
+  async getPublicPage(pageKey: string) {
+    const page = await this.prisma.page.findUnique({
+      where: { page_key: pageKey },
+      include: {
+        contents: {
+          where: { is_active: true },
+          orderBy: { sort_order: 'asc' },
+        },
+      },
+    });
+
+    if (!page || !page.is_active) {
+      throw new NotFoundException(`페이지를 찾을 수 없습니다: ${pageKey}`);
+    }
+
+    return {
+      slug: page.page_key,
+      displayName: page.page_name,
+      theme: page.theme,
+      blocks: page.contents.map((c) => ({
+        id: String(c.id),
+        type: c.content_type,
+        data: c.data,
+        order: c.sort_order,
+      })),
+    };
+  }
+
+  /**
+   * 블록 전체 일괄 저장 (admin) — 기존 블록을 모두 지우고 dto.blocks 로 교체.
+   * displayName/theme(SEO) 도 함께 갱신. 원자적($transaction).
+   */
+  async savePage(pageKey: string, dto: SavePageDto) {
+    const page = await this.prisma.page.findUnique({
+      where: { page_key: pageKey },
+    });
+    if (!page) {
+      throw new NotFoundException(`페이지를 찾을 수 없습니다: ${pageKey}`);
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.pageContent.deleteMany({ where: { page_id: page.id } }),
+      ...dto.blocks.map((b, index) =>
+        this.prisma.pageContent.create({
+          data: {
+            page_id: page.id,
+            content_type: b.type,
+            data: b.data,
+            sort_order: index,
+            is_active: b.visible ?? true,
+          },
+        }),
+      ),
+      this.prisma.page.update({
+        where: { id: page.id },
+        data: {
+          ...(dto.displayName !== undefined && { page_name: dto.displayName }),
+          ...(dto.theme !== undefined && { theme: dto.theme }),
+        },
+      }),
+    ]);
+
+    return this.getPageBySlug(pageKey);
+  }
 
   /** 모든 페이지 목록 */
   async getPages() {
@@ -47,7 +117,7 @@ export class ContentService {
         order: c.sort_order,
         visible: c.is_active,
         createdAt: c.created_at?.toISOString() ?? '',
-        updatedAt: c.created_at?.toISOString() ?? '',
+        updatedAt: c.updated_at?.toISOString() ?? c.created_at?.toISOString() ?? '',
       })),
     };
   }

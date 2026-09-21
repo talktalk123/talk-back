@@ -6,23 +6,41 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { ContentService } from './content.service';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { UpdateBlockDto } from './dto/update-block.dto';
 import { ReorderBlocksDto } from './dto/reorder-blocks.dto';
+import { SavePageDto } from './dto/save-page.dto';
 import { JwtAuthGuard } from '../auth/auth.guard';
 
 @Controller('content')
 export class ContentController {
   constructor(private readonly contentService: ContentService) {}
 
-  /** GET /content/pages — 페이지 목록 */
+  /**
+   * GET /content/public/pages/:slug — 공개 렌더용 (인증 없음).
+   * is_active 페이지 + is_active 블록만, sort_order 순. SSR이 이 경로로 조회한다.
+   */
+  @Get('public/pages/:slug')
+  getPublicPage(@Param('slug') slug: string) {
+    return this.contentService.getPublicPage(slug);
+  }
+
+  /** GET /content/pages — 페이지 목록 (admin) */
   @UseGuards(JwtAuthGuard)
   @Get('pages')
   getPages() {
     return this.contentService.getPages();
+  }
+
+  /** PUT /content/pages/:slug — 블록 전체 일괄 저장 (admin) */
+  @UseGuards(JwtAuthGuard)
+  @Put('pages/:slug')
+  savePage(@Param('slug') slug: string, @Body() dto: SavePageDto) {
+    return this.contentService.savePage(slug, dto);
   }
 
   /** GET /content/pages/:slug — 페이지 + 블록 상세 */
